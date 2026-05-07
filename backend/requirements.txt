@@ -3,3 +3,5 @@ uvicorn[standard]
 pydantic
 python-dotenv
 pytest
+chromadb
+sentence-transformers
