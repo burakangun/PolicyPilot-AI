@@ -23,7 +23,7 @@ def extract_frontmatter(content: str) -> tuple[dict, str]:
     raw_metadata = parts[1].strip()
     body = parts[2].strip()
 
-    metada = {}
+    metadata = {}
 
     for line in raw_metadata.splitlines():
         if ":" not in line:
