@@ -22,16 +22,12 @@ class TextSplitter:
         current_length = 0
 
         for word in words:
-            # +1 for the space character
             word_length = len(word) + 1 
             
             if current_length + word_length > self.chunk_size and current_chunk:
-                # If the chunk is full, add it to the list
+               
                 chunks.append(" ".join(current_chunk))
                 
-                # Overlap Logic:
-                # When moving to the next chunk, we take the last few words
-                # of the previous chunk. This prevents the loss of context.
                 overlap_length = 0
                 overlap_chunk = []
                 for w in reversed(current_chunk):
@@ -47,7 +43,6 @@ class TextSplitter:
             current_chunk.append(word)
             current_length += word_length
 
-        # The remaining final chunk
         if current_chunk:
             chunks.append(" ".join(current_chunk))
 
@@ -62,14 +57,13 @@ class TextSplitter:
         document_chunks = []
         
         for i, text in enumerate(text_chunks):
-            # Chunk ID generation
+           
             chunk_id = str(uuid.uuid4())
             
             chunk = DocumentChunk(
                 chunk_id=chunk_id,
                 document_name=doc.document_name,
                 content=text,
-                # Metadata preservation and chunk-specific information
                 metadata={
                     **doc.metadata,
                     "chunk_index": i,
