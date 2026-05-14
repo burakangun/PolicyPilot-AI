@@ -37,7 +37,7 @@ class VectorStore:
             metadatas.append(clean_metadata)
             ids.append(chunk.chunk_id)
 
-        self.collection.add(
+        self.collection.upsert(
             documents=documents,
             metadatas=metadatas,
             ids=ids
