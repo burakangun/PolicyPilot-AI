@@ -6,3 +6,4 @@ pytest
 chromadb
 sentence-transformers
 huggingface_hub
+streamlit
