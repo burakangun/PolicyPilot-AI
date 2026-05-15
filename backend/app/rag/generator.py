@@ -10,7 +10,7 @@ class LLMGenerator:
     Generates answers using the Hugging Face Inference API,
     grounded on retrieved document chunks.
     """
-    def __init__(self, model_name: str = "Qwen/Qwen2.5-72B-Instruct"):
+    def __init__(self, model_name: str = "Qwen/Qwen2.5-7B-Instruct"):
         self.model_name = model_name
         self.token = os.getenv("HF_TOKEN")
         self.client = InferenceClient(token=self.token)
@@ -26,6 +26,7 @@ class LLMGenerator:
             "SADECE sana verilen dokümanlardaki bilgilere dayanarak cevap ver. "
             "Kullanıcıya daima profesyonel, detaylı ve açıklayıcı bir Türkçe ile yanıt ver. "
             "Maddeler halinde ve okunması kolay bir format (Markdown) kullan. "
+            "Eğer kullanıcı sadece 'Merhaba', 'Selam', 'Nasılsın' gibi sohbet (chit-chat) cümleleri kuruyorsa ona nazikçe selam ver ve hangi konularda (Şirket Politikaları, KVKK vb.) yardımcı olabileceğini söyle. "
             "Eğer sorunun cevabı dokümanlarda yoksa 'Bu bilgi mevcut dokümanlarda bulunamadı.' de. "
             "Asla kendi bilgini katma ve uydurma bilgi verme."
         )

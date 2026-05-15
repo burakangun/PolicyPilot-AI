@@ -35,6 +35,7 @@ class VectorStore:
         for chunk in chunks:
             documents.append(chunk.content)
             clean_metadata = {k: v for k, v in chunk.metadata.items() if v is not None}
+            clean_metadata["document_name"] = chunk.document_name
             metadatas.append(clean_metadata)
             ids.append(chunk.chunk_id)
 

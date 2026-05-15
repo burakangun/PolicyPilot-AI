@@ -67,7 +67,7 @@ with st.sidebar:
         
     st.divider()
     st.markdown("💡 **Nasıl Kullanılır?**\nSağ taraftan kurumsal politikalar, IK kuralları ve KVKK süreçleri hakkında dilediğinizi sorabilirsiniz.")
-    st.markdown("🎯 *Qwen2.5-72B & ChromaDB destekli.*")
+    st.markdown("🎯 *Qwen2.5-7B & ChromaDB destekli.*")
 
 st.title("🛡️ PolicyPilot AI Asistan")
 st.markdown("Merhabalar! Şirket politikaları hakkında size nasıl yardımcı olabilirim?")
