@@ -3,6 +3,8 @@ from fastapi import APIRouter, HTTPException
 from app.api.schemas import QueryRequest, QueryResponse
 from app.rag.vector_store import VectorStore
 from app.rag.generator import LLMGenerator
+from app.rag.router import detect_intent, CHITCHAT_RESPONSE
+from app.rag.reranker import rerank_chunks
 
 router = APIRouter(prefix="/api", tags=["PolicyPilot AI"])
 
@@ -48,36 +50,55 @@ def list_documents():
 @router.post("/query", response_model=QueryResponse)
 def query_rag(request: QueryRequest):
     """
-    Search the ChromaDB vector store for relevant chunks and generate an answer using LLM.
+    Aşama 1: Semantic Router — gelen mesajın niyetini tespit eder.
+    Aşama 2: Eğer POLICY_QUERY ise ChromaDB'de arama yapar.
+    Aşama 3: Bulunan chunk'ları LLM'e gönderip cevap üretir.
     """
+    # --- AŞAMA 1: SEMANTIC ROUTER ---
+    # Her soru için veritabanını ve LLM'i çalıştırmak israf.
+    # Önce niyeti tespit et; sohbet mesajlarını anında yanıtla.
+    intent = detect_intent(request.query)
+    
+    if intent == "CHITCHAT":
+        return QueryResponse(
+            query=request.query,
+            answer=CHITCHAT_RESPONSE,
+            results=[]
+        )
+
+    # --- AŞAMA 2: RAG PIPELINE (Sadece POLICY_QUERY için) ---
     if not vector_store:
         raise HTTPException(status_code=500, detail="Vector store is not initialized.")
     if not llm_generator:
         raise HTTPException(status_code=500, detail="LLM Generator is not initialized.")
-        
-    results = vector_store.search(query=request.query, n_results=request.n_results)
-    
-    # Format results and extract text for LLM
+
+    # Daha geniş bir aday havuzu çek (10 chunk), sonra re-ranker ile en iyi 3'e indir.
+    # Bu tekniğe sektörde "Retrieve & Re-rank" denir.
+    candidate_count = request.n_results * 3
+    results = vector_store.search(query=request.query, n_results=candidate_count)
+
     formatted_results = []
-    context_chunks = []
-    
+    raw_chunks = []
+
     if results and results.get('documents') and len(results['documents'][0]) > 0:
-        context_chunks = results['documents'][0]
+        raw_chunks = results['documents'][0]
         for i in range(len(results['documents'][0])):
-            match_content = results['documents'][0][i]
-            metadata = results['metadatas'][0][i]
-            
             formatted_results.append({
-                "content": match_content,
-                "metadata": metadata,
+                "content": results['documents'][0][i],
+                "metadata": results['metadatas'][0][i],
                 "distance": results['distances'][0][i] if 'distances' in results and results['distances'] else None
             })
-            
-    # Generate Answer using Qwen via LLMGenerator
+
+    # --- AŞAMA 2.5: RE-RANKING ---
+    # Cross-Encoder, soruyu ve her chunk'ı birlikte değerlendirip
+    # en alakalı olanları seçer. LLM'e sadece bunlar gider.
+    context_chunks = rerank_chunks(query=request.query, chunks=raw_chunks, top_k=request.n_results)
+
+    # --- AŞAMA 3: LLM GENERATION ---
     answer = llm_generator.generate_answer(query=request.query, context_chunks=context_chunks)
-            
+
     return QueryResponse(
-        query=request.query, 
+        query=request.query,
         answer=answer,
         results=formatted_results
     )
