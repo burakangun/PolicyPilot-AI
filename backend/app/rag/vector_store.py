@@ -12,7 +12,8 @@ class VectorStore:
     def __init__(self, persist_directory: str = "./chroma_db", collection_name: str = "policy_documents"):
         self.client = chromadb.PersistentClient(path=persist_directory)
         
-        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
+        # Turkce destegi icin Multilingual model sart. Aksi halde aramalar sacmalar.
+        self.embedding_function = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="paraphrase-multilingual-MiniLM-L12-v2")
         
         self.collection = self.client.get_or_create_collection(
             name=collection_name,
