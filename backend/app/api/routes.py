@@ -2,6 +2,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from app.api.schemas import QueryRequest, QueryResponse
 from app.rag.vector_store import VectorStore
+from app.rag.generator import LLMGenerator
 
 router = APIRouter(prefix="/api", tags=["PolicyPilot AI"])
 
@@ -9,7 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 RAW_DOCS_DIR = PROJECT_ROOT / "data" / "raw_docs"
 CHROMA_DB_DIR = PROJECT_ROOT / "backend" / "chroma_db"
 
-# Initialize vector store
+# Initialize vector store and LLM Generator
 try:
     vector_store = VectorStore(
         persist_directory=str(CHROMA_DB_DIR), 
@@ -19,12 +20,19 @@ except Exception as e:
     print(f"Warning: Failed to initialize VectorStore. Error: {e}")
     vector_store = None
 
+try:
+    llm_generator = LLMGenerator()
+except Exception as e:
+    print(f"Warning: Failed to initialize LLMGenerator. Error: {e}")
+    llm_generator = None
+
 
 @router.get("/health")
 def health_check():
     return {
         "status": "ok", 
-        "vector_store": "initialized" if vector_store else "not_initialized"
+        "vector_store": "initialized" if vector_store else "not_initialized",
+        "llm_generator": "initialized" if llm_generator else "not_initialized"
     }
 
 
@@ -40,16 +48,21 @@ def list_documents():
 @router.post("/query", response_model=QueryResponse)
 def query_rag(request: QueryRequest):
     """
-    Search the ChromaDB vector store for relevant chunks based on the query.
+    Search the ChromaDB vector store for relevant chunks and generate an answer using LLM.
     """
     if not vector_store:
         raise HTTPException(status_code=500, detail="Vector store is not initialized.")
+    if not llm_generator:
+        raise HTTPException(status_code=500, detail="LLM Generator is not initialized.")
         
     results = vector_store.search(query=request.query, n_results=request.n_results)
     
-    # Format results
+    # Format results and extract text for LLM
     formatted_results = []
+    context_chunks = []
+    
     if results and results.get('documents') and len(results['documents'][0]) > 0:
+        context_chunks = results['documents'][0]
         for i in range(len(results['documents'][0])):
             match_content = results['documents'][0][i]
             metadata = results['metadatas'][0][i]
@@ -60,4 +73,11 @@ def query_rag(request: QueryRequest):
                 "distance": results['distances'][0][i] if 'distances' in results and results['distances'] else None
             })
             
-    return QueryResponse(query=request.query, results=formatted_results)
+    # Generate Answer using Qwen via LLMGenerator
+    answer = llm_generator.generate_answer(query=request.query, context_chunks=context_chunks)
+            
+    return QueryResponse(
+        query=request.query, 
+        answer=answer,
+        results=formatted_results
+    )
