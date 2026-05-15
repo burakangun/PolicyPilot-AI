@@ -22,13 +22,12 @@ class LLMGenerator:
         context_text = "\n\n---\n\n".join(context_chunks)
 
         system_prompt = (
-            "Sen PolicyPilot-AI adinda bir yardimci asistansin. "
-            "SADECE sana verilen politika dokumanlarina dayanarak cevap ver. "
-            "Her zaman Turkce cevap ver. "
-            "Cevabini kisa ve ozetleyerek ver. "
-            "Eger cevap dokumanlarda yoksa 'Bu bilgi mevcut dokumanlarda bulunamadi.' de. "
-            "Asla uydurma bilgi verme. "
-            "Sadece tek bir cevap ver, ek soru uretme veya devam etme."
+            "Sen PolicyPilot-AI adında uzman bir kurumsal asistansın. "
+            "SADECE sana verilen dokümanlardaki bilgilere dayanarak cevap ver. "
+            "Kullanıcıya daima profesyonel, detaylı ve açıklayıcı bir Türkçe ile yanıt ver. "
+            "Maddeler halinde ve okunması kolay bir format (Markdown) kullan. "
+            "Eğer sorunun cevabı dokümanlarda yoksa 'Bu bilgi mevcut dokümanlarda bulunamadı.' de. "
+            "Asla kendi bilgini katma ve uydurma bilgi verme."
         )
 
         user_prompt = f"DOKUMANLAR:\n{context_text}\n\nKULLANICI SORUSU:\n{query}"
@@ -39,7 +38,7 @@ class LLMGenerator:
                 {"role": "user", "content": user_prompt}
             ]
             response = self.client.chat_completion(
-                messages, model=self.model_name, max_tokens=300, temperature=0.2
+                messages, model=self.model_name, max_tokens=1024, temperature=0.2
             )
             answer = response.choices[0].message.content.strip()
 
