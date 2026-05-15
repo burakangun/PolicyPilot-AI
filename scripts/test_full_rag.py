@@ -11,6 +11,7 @@ from app.rag.document_loader import load_documents
 from app.rag.txt_splitter import TextSplitter
 from app.rag.vector_store import VectorStore
 from app.rag.generator import LLMGenerator
+from app.rag.reranker import rerank_chunks
 
 def main():
     print("Preparing Documents")
@@ -41,10 +42,20 @@ def main():
     print(f"Question: {query}")
 
     # Retrieval
-    results = store.search(query=query, n_results=3)
-    context_chunks = results['documents'][0]
+    candidate_results = store.search(query=query, n_results=10)
+    raw_chunks = candidate_results['documents'][0]
     
-    print(f"\n{len(context_chunks)} relevant chunks found. Generating answer...")
+    print(f"\n{len(raw_chunks)} candidate chunks found. Re-ranking...")
+    
+    context_chunks = rerank_chunks(query=query, chunks=raw_chunks, top_k=3)
+    
+    print(f"{len(context_chunks)} best chunks selected. Context chunks:")
+    for i, c in enumerate(context_chunks):
+        print(f"--- CHUNK {i} ---")
+        print(c)
+    print("--- END CHUNKS ---")
+    
+    print("Generating answer...")
 
     # Generation
     generator = LLMGenerator()
